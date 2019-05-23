@@ -1,7 +1,3 @@
-export const getToken = () => localStorage.getItem('token');
-export const setToken = token => localStorage.setItem('token', token);
-export const clearToken = () => localStorage.clear();
-
 //格式化时间
 export const formartDate = (date, type = 'datetime') => {
   let year = date.getFullYear();
