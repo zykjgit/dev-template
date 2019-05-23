@@ -6,7 +6,6 @@ import {setToken,getToken,clearToken} from '@/public/utils.js'
 var md5 = require("../md5.js");
 
 import axios from "axios";
-import { reject } from "q";
 let isShowEorro = true;
 const Axios = axios.create({
   baseURL:"http://193.168.58.189:8080/zykj-api/operationweb/",
@@ -25,7 +24,6 @@ let verison = 10023;
 Axios.interceptors.response.use(
   response => {
     const {error_code,message} = response.data;
-    if(isShowEorro) { 
       if(error_code === 19004) {
         if(router.currentRoute.path !== '/login') {
           Vue.prototype.$message({
@@ -41,7 +39,6 @@ Axios.interceptors.response.use(
           clearToken();
         }
         return response
-
       }
       if(error_code === 19005) {
         Vue.prototype.$message({
@@ -54,29 +51,6 @@ Axios.interceptors.response.use(
         // setToken(response.data.token)
         return response
       }
-      if((error_code +'')[0] === '3') {
-        Vue.prototype.$message({
-          type: "warning",
-          duration: "2000",
-          message: message
-        });
-      }
-      if((error_code +'')[0] === '2') {
-        Vue.prototype.$message({
-          type: "warning",
-          duration: "2000",
-          message: message
-        });
-      }
-      if(error_code === -1) {
-        Vue.prototype.$message({
-          type: "warning",
-          duration: "2000",
-          message: message
-        });
-      }
-    }
-    isShowEorro = true;
     return response
 
   },
@@ -89,24 +63,72 @@ Axios.interceptors.response.use(
     return error; // 返回接口返回的错误信息
   }
 );
+
+/** 
+ * postRequest
+ * 对错误提示和存取token进行封装的请求函数
+ * @param {String} uniqueFunc 请求的方法和模块 api路由相关
+ * @param {Object} inputData 发送post请求的数据体
+ * @param {*} expand 忽略
+ * @param {*} uploadplan 忽略
+ * @param {Boolean} showEorro 是否提示错误！
+ * @example
+ * // 返回一个 Promise对象。只有在error_code === 0的情况下为 resloved,其他情况均为rejected;错误信息会被自动拦截并提示！
+ * postRequest('manage/login',{account:111,password:1111}).then(res => {
+ *  if(res) {
+ *    message('sucess')
+ *  }
+ * })
+ */
 function postRequest(uniqueFunc, inputData, expand, uploadplan,showEorro = true) {
   isShowEorro = showEorro;
   if (util.trim(uniqueFunc).length == 0) return false;
 
   const token = getToken("token") || "";
   var postData = requestData(uniqueFunc, inputData, expand, token);
-  return Axios({
+   return Axios({
     method: "post",
     headers: {
       "content-type": "application/x-www-form-urlencoded"
     },
     data: postData,
     onUploadProgress: uploadplan
-  })
+  }).then(response => {
+    const {error_code,message} = response.data;
+
+    if (showEorro) {
+      if(error_code === 0) {
+        return Promise.resolve(response.data.data);
+     } else {
+       if((error_code +'')[0] === '3') {
+         Vue.prototype.$message({
+           type: "warning",
+           duration: "2000",
+           message: message
+         });
+       }
+       if((error_code +'')[0] === '2') {
+         Vue.prototype.$message({
+           type: "warning",
+           duration: "2000",
+           message: message
+         });
+       }
+       if(error_code === -1) {
+         Vue.prototype.$message({
+           type: "warning",
+           duration: "2000",
+           message: message
+         });
+       }
+    }
+       return Promise.reject(response.data)
+    }
+  }).catch(err => console.log(err))
 }
 
 /**
- * 请求数据处理
+ * 请求数据加密处理
  */
 function requestData(uniqueFunction, inputData, expand, token) {
   var encryptData = {};
