@@ -1,5 +1,5 @@
-# dev-admin-template
-  后台开发通用模板
+# dev-template
+ 普通开发模板
 
 ## Project setup
 ```
